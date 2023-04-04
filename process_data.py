@@ -19,7 +19,7 @@ class ProcessData:
 
     def load_corpus(self, corpus_file):
         corpus = {}
-        num_lines = sum(1 for i in open(self.corpus_file, 'rb'))
+        num_lines = sum(1 for i in open(corpus_file, 'rb'))
         with open(corpus_file, encoding='utf8') as fIn:
             for line in tqdm(fIn, total=num_lines):
                 line = json.loads(line)
@@ -31,7 +31,8 @@ class ProcessData:
         with open(query_file, encoding='utf8') as fIn:
             for line in fIn:
                 line = json.loads(line)
-                queries[line.get("id")] = line.get("text")
+                queries[line.get("decision_id")] = line.get("facts")
+        return queries
 
     def load_qrels(self, qrels_file):
         qrels = {}
@@ -44,6 +45,7 @@ class ProcessData:
                     qrels[id] = {cit_id : 1}
                 else:
                     qrels[id][cit_id] = 1
+        return qrels
 
     def load_triplets(self, triplets_file, feature='facts'):
         triplets = []

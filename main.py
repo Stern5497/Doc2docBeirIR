@@ -29,9 +29,7 @@ def run_project():
     process_data = ProcessData()
 
     corpus = process_data.load_corpus("data/corpus_small.jsonl")
-    print(corpus)
     qrels = process_data.load_qrels("data/qrels.jsonl")
-    print(qrels)
     queries = process_data.load_queries("data/queries_facts.jsonl")
     print(queries)
 
@@ -46,7 +44,7 @@ def run_project():
 
     model_name = 'distilbert-base-uncased'
     train_loss = 'cosine'  # cosine or dot_product
-    # train(corpus_splits['train'], queries_facts_splits['train'], qrels_splits['train'], None, None, None, model_name=model_name, train_loss=train_loss)
+    train(corpus_splits['train'], queries_facts_splits['train'], qrels_splits['train'], None, None, None, model_name=model_name, train_loss=train_loss)
 
 
 if __name__ == '__main__':
