@@ -221,3 +221,8 @@ class PreprocessData:
         data['qrels'] = self.create_qrels(df.copy(), data['corpus'])
         data['triples'] = {'facts': self.create_triplets(df, 'facts', data['corpus'])}
         data['triplets']['considerations'] = self.create_triplets(df, 'considerations', data['corpus'])
+
+if __name__ == '__main__':
+    print("Start")
+    preporcessor = PreprocessData()
+    preporcessor.create_data()

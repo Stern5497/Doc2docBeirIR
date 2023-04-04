@@ -10,6 +10,7 @@ import random
 import pandas as pd
 from datasets import load_dataset
 from preprocess_data import PreprocessData
+from process_data import ProcessData
 
 """
 We are using https://github.com/beir-cellar/beir/wiki/Examples-and-tutorials as an example and work with their built in 
@@ -25,13 +26,21 @@ https://colab.research.google.com/drive/1HfutiEhHMJLXiWGT8pcipxT5L2TpYEdt?usp=sh
 
 def run_project():
 
-    preprocess_data = PreprocessData()
-    data = preprocess_data.create_data()
+    process_data = ProcessData()
 
+    corpus = process_data.load_corpus("data/corpus_small.jsonl")
+    print(corpus)
+    qrels = process_data.load_qrels("data/qrels.jsonl")
+    print(qrels)
+    queries = process_data.load_queries("data/queries_facts.jsonl")
+    print(queries)
+
+    """
     corpus_splits = data['corpus'].train_test_split(test_size=0.2)
     queries_facts_splits = data['queries']['facts'].train_test_split(test_size=0.2)
     qrels_splits = data['qrels'].train_test_split(test_size=0.2)
     triplets_facts_splits = data['triplets']
+    """
 
     # TODO find out what dev data is used for
 
