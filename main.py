@@ -5,8 +5,11 @@ import beir
 from beir.datasets.data_loader import GenericDataLoader
 from train_model import train
 from beir import util, LoggingHandler
-from PreprocessDoc2doc import PreprocessDoc2doc
-
+import ast
+import random
+import pandas as pd
+from datasets import load_dataset
+from preprocess_data import PreprocessData
 
 """
 We are using https://github.com/beir-cellar/beir/wiki/Examples-and-tutorials as an example and work with their built in 
@@ -21,14 +24,22 @@ https://colab.research.google.com/drive/1HfutiEhHMJLXiWGT8pcipxT5L2TpYEdt?usp=sh
 
 
 def run_project():
-    preprocessDoc2doc = PreprocessDoc2doc()
-    data_dict = preprocessDoc2doc.create_data()
 
-    corpus = data_dict['corpus']
-    queries = data_dict['queries']['validation']
-    qrels = data_dict['qrels']['validation']
-    train(corpus, queries, qrels)
+    preprocess_data = PreprocessData()
+    data = preprocess_data.create_data()
+
+    corpus_splits = data['corpus'].train_test_split(test_size=0.2)
+    queries_facts_splits = data['queries']['facts'].train_test_split(test_size=0.2)
+    qrels_splits = data['qrels'].train_test_split(test_size=0.2)
+    triplets_facts_splits = data['triplets']
+
+    # TODO find out what dev data is used for
+
+    model_name = 'distilbert-base-uncased'
+    train_loss = 'cosine'  # cosine or dot_product
+    # train(corpus_splits['train'], queries_facts_splits['train'], qrels_splits['train'], None, None, None, model_name=model_name, train_loss=train_loss)
 
 
 if __name__ == '__main__':
+    print("Start")
     run_project()

@@ -28,17 +28,24 @@ logging.basicConfig(format='%(asctime)s - %(message)s',
 #### /print debug information to stdout
 
 
-def train(corpus, queries, qrels):
+def train(corpus, queries, qrels, dev_corpus, dev_queries, dev_qrels, model_name="distilbert-base-uncased", train_loss='cosine'):
+
+    dev_available = False
+    if dev_corpus is not None and dev_queries is not None and dev_qrels is not None:
+        dev_available = True
+
     dataset = 'doc2doc'
 
     #### Provide any sentence-transformers or HF model
-    model_name = "distilbert-base-uncased"
-    word_embedding_model = models.Transformer(model_name, max_seq_length=350)
-    pooling_model = models.Pooling(word_embedding_model.get_word_embedding_dimension())
-    model = SentenceTransformer(modules=[word_embedding_model, pooling_model])
-    print("successfully created model")
+    if model_name == "distilbert-base-uncased":
+        word_embedding_model = models.Transformer(model_name, max_seq_length=350)
+        pooling_model = models.Pooling(word_embedding_model.get_word_embedding_dimension())
+        model = SentenceTransformer(modules=[word_embedding_model, pooling_model])
+        print("successfully created model")
+
     #### Or provide pretrained sentence-transformer model
-    # model = SentenceTransformer("msmarco-distilbert-base-v3")
+    else:
+        model = SentenceTransformer(model_name)
 
     retriever = TrainRetriever(model=model, batch_size=16)
     print("successfully created retreiver")
@@ -47,16 +54,20 @@ def train(corpus, queries, qrels):
     train_samples = retriever.load_train(corpus, queries, qrels)
     train_dataloader = retriever.prepare_train(train_samples, shuffle=True)
 
+
     #### Training SBERT with cosine-product
-    train_loss = losses.MultipleNegativesRankingLoss(model=retriever.model)
+    if train_loss == 'cosine':
+        train_loss = losses.MultipleNegativesRankingLoss(model=retriever.model)
     #### training SBERT with dot-product
-    # train_loss = losses.MultipleNegativesRankingLoss(model=retriever.model, similarity_fct=util.dot_score)
+    else:
+        train_loss = losses.MultipleNegativesRankingLoss(model=retriever.model, similarity_fct=util.dot_score)
 
     #### Prepare dev evaluator
-    # ir_evaluator = retriever.load_ir_evaluator(dev_corpus, dev_queries, dev_qrels)
-
+    if dev_available:
+        ir_evaluator = retriever.load_ir_evaluator(dev_corpus, dev_queries, dev_qrels)
     #### If no dev set is present from above use dummy evaluator
-    ir_evaluator = retriever.load_dummy_evaluator()
+    else:
+        ir_evaluator = retriever.load_dummy_evaluator()
 
     #### Provide model save path
     model_save_path = os.path.join(pathlib.Path(__file__).parent.absolute(), "output",
