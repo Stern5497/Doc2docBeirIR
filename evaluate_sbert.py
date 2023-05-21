@@ -1,0 +1,47 @@
+from time import time
+from beir import util, LoggingHandler
+from beir.retrieval import models
+from beir.datasets.data_loader import GenericDataLoader
+from beir.retrieval.evaluation import EvaluateRetrieval
+from beir.retrieval.search.dense import DenseRetrievalExactSearch as DRES
+
+import logging
+import pathlib, os
+import random
+
+def run_evaluate_sbert(corpus, queries, qrels, model_name, from_pretrained=True):
+
+    #### Just some code to print debug information to stdout
+    logging.basicConfig(format='%(asctime)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=logging.INFO,
+                        handlers=[LoggingHandler()])
+    #### /print debug information to stdout
+
+    dataset = "doc2doc"
+
+    # get cached checkpoint
+    if from_pretrained:
+       model = DRES(models.SentenceBERT((
+                model_name,
+                model_name,
+                " [SEP] "), batch_size=128))
+
+    else:
+        model = DRES(models.SentenceBERT(model_name), batch_size=256, corpus_chunk_size=512*9999)
+
+    retriever = EvaluateRetrieval(model, score_function="dot")
+
+    #### Retrieve dense results (format of results is identical to qrels)
+    start_time = time()
+    results = retriever.retrieve(corpus, queries)
+    end_time = time()
+    print("Time taken to retrieve: {:.2f} seconds".format(end_time - start_time))
+    #### Evaluate your retrieval using NDCG@k, MAP@K ...
+
+    logging.info("Retriever evaluation for k in: {}".format(retriever.k_values))
+    ndcg, _map, recall, precision = retriever.evaluate(qrels, results, retriever.k_values)
+
+    # mrr = retriever.evaluate_custom(qrels, results, retriever.k_values, metric="mrr")
+    recall_cap = retriever.evaluate_custom(qrels, results, retriever.k_values, metric="r_cap")
+    hole = retriever.evaluate_custom(qrels, results, retriever.k_values, metric="hole")

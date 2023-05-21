@@ -9,7 +9,6 @@
 #SBATCH --time=24:00:00
 #SBATCH --qos=job_gpu_preempt
 #SBATCH --partition=gpu
-#SBATCH --array=2-4
 
 # load modules
 module load Workspace Anaconda3/2021.11-foss-2021a CUDA/11.3.0-GCC-10.2.0
@@ -21,6 +20,9 @@ conda activate ir
 # Put your code below this line
 
 python main.py
+# python evaluate_bm25.py
+# python train_sbert.py
+# python evaluate_multilingual_bm25.py
 
 # IMPORTANT:
 # Run with                  sbatch run_hpc_job.sh
