@@ -42,7 +42,8 @@ def train(corpus, queries, qrels, dev_corpus, dev_queries, dev_qrels, model_name
 
     #### Provide any sentence-transformers or HF model
     if not pretrained_model:
-        word_embedding_model = models.Transformer(model_name, max_seq_length=350)
+        #word_embedding_model = models.Transformer(model_name, max_seq_length=350)
+        word_embedding_model = models.Transformer(model_name, max_seq_length=512)
         pooling_model = models.Pooling(word_embedding_model.get_word_embedding_dimension())
         model = SentenceTransformer(modules=[word_embedding_model, pooling_model])
         print("successfully created model")
@@ -52,7 +53,6 @@ def train(corpus, queries, qrels, dev_corpus, dev_queries, dev_qrels, model_name
         model = SentenceTransformer(model_name)
 
     retriever = TrainRetriever(model=model, batch_size=16)
-    print("successfully created retriever")
 
     """
         word_embedding_model = models.Transformer('bert-base-uncased', max_seq_length=256)
@@ -70,6 +70,7 @@ def train(corpus, queries, qrels, dev_corpus, dev_queries, dev_qrels, model_name
 
     #### Prepare training samples
     train_samples = retriever.load_train(corpus, queries, qrels)
+    print("successfully load train")
     train_dataloader = retriever.prepare_train(train_samples, shuffle=True)
 
     #### Training SBERT with cosine-product

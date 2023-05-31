@@ -32,11 +32,51 @@ class ProcessData:
         qrel_dataset = self.load_from_hf('Stern5497/qrel')
         querie_dataset = self.load_from_hf("Stern5497/querie")
         corpus_dataset = self.load_from_hf("Stern5497/corpus")
+        querie_dataset_train, querie_dataset_test = self.create_splits(querie_dataset)
+        return querie_dataset, querie_dataset_train, querie_dataset_test, qrel_dataset, corpus_dataset
 
-        querie_dataset = querie_dataset.filter(lambda row: len(row['text']) > 3)
-        corpus_dataset = corpus_dataset.filter(lambda row: len(row['text']) > 3)
+    def create_splits(self, querie_dataset):
+        splits = querie_dataset.train_test_split(test_size=0.9)
+        querie_dataset_train = splits['train']
+        querie_dataset_test = splits['test']
+        return querie_dataset_train, querie_dataset_test
 
-        return querie_dataset, qrel_dataset, corpus_dataset
+    def create_corpus_dict(self, corpus_dataset):
+        corpus_dict = {}
+        def write_dict(row):
+            id = str(row['id'])
+            corpus_dict[id] = {"title": '', "text": row['text']}
+            return row
+
+        corpus_dataset.apply(write_dict, axis="columns")
+
+        return corpus_dict
+
+    def create_qrels_dict(self, qrels_dataset, corpus_dict):
+        qrels_dict = {}
+
+        def write_qrels(row):
+            if row['corp_id'] in corpus_dict:
+                if row['id'] not in qrels_dict:
+                    qrels_dict[row['id']] = {row['corp_id']: 1}
+                else:
+                    qrels_dict[row['id']][row['corp_id']] = 1
+
+        qrel_dataset = qrels_dataset.apply(write_qrels, axis='columns')
+
+        return qrels_dict
+
+    def create_query_dict(self, queries_dataset, qrels_dict):
+        queries_dict = {}
+
+        def write_dict(row):
+            id = row['id']
+            if id in qrels_dict:
+                text = row['text']
+                queries_dict[id] = str(text)
+
+        queries_dataset.apply(write_dict, axis="columns")
+        return queries_dict
 
     def create_data_dicts(self, querie_dataset, qrel_dataset, corpus_dataset):
         corpu = {}
@@ -84,7 +124,7 @@ class ProcessData:
 
         return query, qrel, corpu, querie_dataset, qrel_dataset, corpus_dataset
 
-    def shorten_and_reduce(self, queries, corpus, language_long):
+    def remove_stopwords(self, queries, corpus, language_long):
 
         sw_nltk = stopwords.words(language_long)
         print(sw_nltk)
@@ -108,7 +148,7 @@ class ProcessData:
             value['text'] = new_value
             corpus_filtered[key] = value
 
-        print("Shortened queries and removed stopwords")
+        print("Removed stopwords")
 
         return queries_filtered, corpus_filtered
 
@@ -144,7 +184,7 @@ class ProcessData:
 
         return queries_subset, qrels_subset, corpus_subset
 
-    def create_splits(self, n, queries, qrels, corpus):
+    def create_splits_old(self, n, queries, qrels, corpus):
         print("Start creating splits")
         counter = 0
         qrels_train = {}
@@ -191,116 +231,3 @@ class ProcessData:
         print(f"We have {len(queries_test)} test queries")
         return qrels_train, queries_train, qrels_test, queries_test
 
-    def create_sll(self, qrels_lang_dataset, qrels_test, queries_test, _):
-        counter = 0
-        qrels_sll = {}
-        queries_ssl = {}
-        ids = []
-        print(len(queries_test.items()))
-        print(f"Qrels_test includes: {len(qrels_test)} before ssl removal")
-
-        qrel = {}
-
-        def write_ssl_qrels(row):
-            # only use qrels with valid query
-            if row['id'] not in qrel:
-                qrel[row['id']] = {row['corp_id']: 1}
-                ids.append(row['id'])
-            else:
-                qrel[row['id']][row['corp_id']] = 1
-                ids.append(row['id'])
-            return row
-        qrels_lang_dataset = qrels_lang_dataset.map(write_ssl_qrels)
-
-        missing_query = 0
-
-        for q_key, value in qrel.items():
-            # only use qrels with valid query
-            if q_key in queries_test:
-                for c_key in value.keys():
-                    if c_key not in qrels_sll:
-                        qrels_sll[q_key] = {c_key: 1}
-                        ids.append(q_key)
-                    else:
-                        qrels_sll[q_key][c_key] = 1
-                        ids.append(q_key)
-            else:
-                missing_query = missing_query + 1
-
-        print(f"Missing queries: {missing_query}")
-        print(f"Qrels SLL includes: {len(qrels_sll.items())}")
-
-        query = {}
-
-        for key, value in queries_test.items():
-            if key in ids:
-                query[key] = value
-
-        return qrels_sll, query
-
-    def load_corpus(self, corpus_files):
-        corpus = {}
-        for path in corpus_files:
-            num_lines = sum(1 for i in open(path, 'rb'))
-            with open(path, encoding='utf8') as fIn:
-                for line in tqdm(fIn, total=num_lines):
-                    line = json.loads(line)
-                    content = line.get("content")
-                    content['text'] = re.sub('\W+', ' ', content['text'])
-                    corpus[line.get("id")] = content
-        return corpus
-
-    def load_queries_splits(self, query_file):
-        test_queries = {}
-        train_queries = {}
-        val_queries = {}
-        num_lines = sum(1 for i in open(query_file, 'rb'))
-        test = num_lines*0.2
-        val = num_lines*0.3
-        counter = 0
-        with open(query_file, encoding='utf8') as fIn:
-            for line in fIn:
-                counter += 1
-                line = json.loads(line)
-                if counter < test:
-                    test_queries[line.get("id")] = line.get("text")
-                elif counter < val:
-                    val_queries[line.get("id")] = line.get("text")
-                else:
-                    train_queries[line.get("id")] = line.get("text")
-        return train_queries, test_queries, val_queries
-
-    def load_queries(self, query_files):
-        queries = {}
-        for path in query_files:
-            with open(path, encoding='utf8') as fIn:
-                for line in fIn:
-                    line = json.loads(line)
-                    text = re.sub('\W+', ' ', line.get("text"))
-                    queries[line.get("id")] = text
-        return queries
-
-    def load_qrels(self, qrels_files):
-        qrels = {}
-        for path in qrels_files:
-            with open(path, encoding='utf8') as fIn:
-                for line in fIn:
-                    line = json.loads(line)
-                    id = line.get("id")
-                    cit_id = line.get('corp_id')
-                    if id not in qrels:
-                        qrels[id] = {cit_id : 1}
-                    else:
-                        qrels[id][cit_id] = 1
-        return qrels
-
-    def load_triplets(self, triplets_file, feature='facts'):
-        triplets = []
-        with open(triplets_file, encoding='utf8') as fIn:
-            for line in fIn:
-                line = json.loads(line)
-                text_feature = line.get(feature)
-                text_corpus = line.get('citations')
-                text_corpus_neg = line.get('neg_text')
-                triplets.append((text_feature, text_corpus, text_corpus_neg))
-        return triplets

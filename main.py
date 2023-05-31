@@ -7,6 +7,7 @@ from train_model import train
 from evaluate_dpr import run_evaluate_dpr
 from evaluate_sbert import run_evaluate_sbert
 from evaluate_dim_reduction import run_evaluate_dim_reduction
+from train_sbert_hardneg import run_train_sbert_hardneg
 from beir import util, LoggingHandler
 import ast
 import random
@@ -25,201 +26,327 @@ https://colab.research.google.com/drive/1HfutiEhHMJLXiWGT8pcipxT5L2TpYEdt?usp=sh
 
 """
 
+def get_formatted_data(filter_language):
+    process_data = ProcessData()
+    querie_dataset, querie_dataset_train, querie_dataset_test, qrels_dataset, corpus_dataset = process_data.get_data()
 
-def run_project():
-    print("START")
+    print(querie_dataset_train)
+    print(querie_dataset_test)
+    print(qrels_dataset)
+    print(corpus_dataset)
+
+    # corpus stays always the same
+    corpus_dict = process_data.create_corpus_dict(pd.DataFrame(corpus_dataset))
+
+    # qrels are split into mixed, and single languages
+    qrels_dataset_ssl = qrels_dataset.filter(lambda row: row['language'] == filter_language)
+    qrels_dict = process_data.create_qrels_dict(pd.DataFrame(qrels_dataset), corpus_dict)
+    qrels_dict_ssl = process_data.create_qrels_dict(pd.DataFrame(qrels_dataset_ssl), corpus_dict)
+
+    # we always split so results are comparable
+    if filter_language != 'mixed':
+        querie_dataset_test = querie_dataset_test.filter(lambda row: row['language'] == filter_language)
+    queries_dict_train = process_data.create_query_dict(pd.DataFrame(querie_dataset_train), qrels_dict)
+    queries_dict_test = process_data.create_query_dict(pd.DataFrame(querie_dataset_test), qrels_dict)
+
+    print("####################################################################################################")
+    print("Successfully loaded data.")
+    print("####################################################################################################")
+
+    print(len(corpus_dict))
+    print(len(qrels_dict))
+    print(len(qrels_dict_ssl))
+    print(len(queries_dict_train))
+    print(len(queries_dict_test))
+
+    return queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict
+
+if __name__ == '__main__':
+    print("Start")
+    # run_project()
+    """
+    model_name = 'Stern5497/sbert-distiluse'
+    queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data('mixed')
+    run_train_sbert_hardneg(corpus_dict, queries_dict_train, qrels_dict, model_name, from_pretrained=True)
+    """
 
     """
-    Get Data
+    print("####################################################################################")
+    queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data('mixed')
+    train_models(corpus_dict, queries_dict_train, qrels_dict)
+    print("####################################################################################")
+    
+    queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data('mixed')
+    model_name = 'distiluse-base-multilingual-cased-v1'
+    train_loss = 'cosine'  # cosine or dot_product
+    train(corpus_dict, queries_dict_train, qrels_dict, None, None, None, model_name=model_name, train_loss=train_loss,
+          pretrained_model=True)
     """
+
+
+    print("####################################################################################")
+    print("####################################################################################")
+    ssl_queries = []
+    qrels = []
+    lanugages = ['de', 'fr', 'it']
+    for language in lanugages:
+        queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data(language)
+        # to create ssl datatset of all languages we need to celloect all qrels
+        ssl_queries.append(qrels_dict_ssl)
+        # make sure queries are in qrels
+        query_adapted = {}
+        qrels.append(qrels_dict)
+        for id in queries_dict_test.keys():
+            if id in qrels_dict_ssl:
+                query_adapted[id] = queries_dict_test[id]
+
+        """
+        print("####################################################################################")
+        print(f"queries for language {language}: {len(queries_dict_test)}")
+        print("####################################################################################")
+        print(language)
+        model_name = 'Stern5497/sBert-swiss-legal-base'
+        print(model_name)
+        print("####################################################################################")
+        print('SBERT')
+        run_evaluate_sbert(corpus_dict, queries_dict_test, qrels_dict, model_name)
+        print("####################################################################################")
+        print('SSL')
+        run_evaluate_sbert(corpus_dict, query_adapted, qrels_dict_ssl, model_name)
+        print("####################################################################################")
+
+        print("####################################################################################")
+        print(language)
+        model_name = 'distiluse-base-multilingual-cased-v1'
+        print(model_name)
+        print("####################################################################################")
+        print('SBERT')
+        run_evaluate_sbert(corpus_dict, queries_dict_test, qrels_dict, model_name)
+        print("####################################################################################")
+        print('SSL')
+        run_evaluate_sbert(corpus_dict, query_adapted, qrels_dict_ssl, model_name)
+        print("####################################################################################")
+
+        print("####################################################################################")
+        print(language)
+        model_name = 'Stern5497/sbert-legal-swiss-roberta-base'
+        print(model_name)
+        print("####################################################################################")
+        print('SBERT')
+        run_evaluate_sbert(corpus_dict, queries_dict_test, qrels_dict, model_name)
+        print("####################################################################################")
+        print('SSL')
+        run_evaluate_sbert(corpus_dict, query_adapted, qrels_dict_ssl, model_name)
+        print("####################################################################################")
+        
+
+        print("####################################################################################")
+        print(language)
+        model_name = 'Stern5497/sbert-distiluse'
+        print(model_name)
+        print("####################################################################################")
+        print('SBERT')
+        run_evaluate_sbert(corpus_dict, queries_dict_test, qrels_dict, model_name)
+        print("####################################################################################")
+        print('SSL')
+        run_evaluate_sbert(corpus_dict, query_adapted, qrels_dict_ssl, model_name)
+        print("####################################################################################")
+        """
+
+        print("####################################################################################")
+        print(language)
+        model_name = 'Stern5497/sbert-distiluse-hardneg'
+        print(model_name)
+        print("####################################################################################")
+        print('SBERT')
+        run_evaluate_sbert(corpus_dict, queries_dict_test, qrels_dict, model_name)
+        print("####################################################################################")
+        print('SSL')
+        run_evaluate_sbert(corpus_dict, query_adapted, qrels_dict_ssl, model_name)
+        print("####################################################################################")
+
+
+    queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data('mixed')
+
+    qrels_combined = dict(qrels[0], **qrels[1])
+    qrels_combined = dict(qrels_combined, **qrels[2])
+    query_mixed = {}
+    query_mixed_short = {}
+    for id in queries_dict_test.keys():
+        if id in qrels_dict:
+            query_mixed[id] = queries_dict_test[id]
+            if len(query_mixed)<100:
+                query_mixed_short[id] = queries_dict_test[id]
+            if len(query_mixed) > 50000:
+                break
+
+    qrels_ssl_combined = dict(ssl_queries[0], **ssl_queries[1])
+    qrels_ssl_combined = dict(qrels_ssl_combined, **ssl_queries[2])
+    query_ssl = {}
+    for id in queries_dict_test.keys():
+        if id in qrels_ssl_combined:
+            query_ssl[id] = queries_dict_test[id]
+            if len(query_ssl) > 50000:
+                break
 
     process_data = ProcessData()
-    querie_dataset, qrel_dataset, corpus_dataset = process_data.get_data()
+    for language in ['german', 'french', 'italian']:
+        query_s, corpus_s = process_data.remove_stopwords(query_mixed, corpus_dict, language)
 
-    data = {}
+    queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data('mixed')
 
-    # filter for languages
-    data['corpus'] = corpus_dataset
-    data['query'] = {'de': querie_dataset.filter(lambda x: x['language'] == 'de')}
-    data['query']['fr'] = querie_dataset.filter(lambda x: x['language'] == 'fr')
-    data['query']['it'] = querie_dataset.filter(lambda x: x['language'] == 'it')
-    data['query']['mixed'] = querie_dataset.filter(lambda x: x['language'] == 'mixed')
-    data['qrel'] = {'de': qrel_dataset.filter(lambda x: x['language'] == 'de')}
-    data['qrel']['fr'] = qrel_dataset.filter(lambda x: x['language'] == 'fr')
-    data['qrel']['it'] = qrel_dataset.filter(lambda x: x['language'] == 'it')
-    data['qrel']['mixed'] = qrel_dataset.filter(lambda x: x['language'] == 'mixed')
-    print("After filtering for language")
-    print(data.keys())
+    corpus_short = {}
+    qrel_short = {}
+    for id in query_mixed.keys():
+        qrel_short[id] = qrels_dict[id]
+        for id in qrels_dict[id].keys():
+            corpus_short[id] = corpus_dict[id]
+    print(f"Length of shortened corpus: {len(corpus_short)}")
+    print(f"Length of shortened qrel: {len(qrel_short)}")
 
-    """
-    Split Data
-    """
-
-    # create Train Test split (only for mixed dataset)
-    queries, qrels, corpus, _, __, ___ = process_data.create_data_dicts(data['query']['mixed'], data['qrel']['mixed'],
-                                                                        data['corpus'])
-    n = 0.5
-    qrels_train, queries_train, qrels_test, queries_test = process_data.create_splits(n, queries, qrels, corpus)
-
-    """
-    Train S-BERT
-   
-
-    model_name = 'joelito/legal-xlm-roberta-base'
-    train_loss = 'cosine'  # cosine or dot_product
-    train(corpus, queries_train, qrels_train, None, None, None, model_name=model_name, train_loss=train_loss,
-          pretrained_model=True)
-
-    model_name = 'joelito/legal-swiss-roberta-base'
-    train_loss = 'cosine'  # cosine or dot_product
-    train(corpus, queries_train, qrels_train, None, None, None, model_name=model_name, train_loss=train_loss,
-          pretrained_model=True)
-    """
+    # evaluate S-BERT for trained on hardneg: all, SSl, S, 100
+    print("####################################################################################")
+    print('mixed')
+    model_name = 'Stern5497/sbert-distiluse-hardneg'
+    print(model_name)
+    print("####################################################################################")
+    print('SBERT')
+    run_evaluate_sbert(corpus_dict, query_mixed, qrels_dict, model_name)
+    print("####################################################################################")
+    print('SSL')
+    run_evaluate_sbert(corpus_dict, query_ssl, qrels_ssl_combined, model_name)
+    print("####################################################################################")
+    print('S')
+    run_evaluate_sbert(corpus_s, query_s, qrels_combined, model_name)
+    print("####################################################################################")
+    print('100')
+    run_evaluate_sbert(corpus_short, query_mixed_short, qrel_short, model_name)
+    print("####################################################################################")
 
     """
-    Evaluate sBERT and Dim REduction
-    """
-
-    stopwords_remove = False
-    shorten = False
-    subset = False
-    sll = False
-
-    querie_language = 'mixed'
-    qrel_language = 'mixed'
-
-    print("Before Prozessing Test split:")
-    print(f"Queries: {len(queries_test.items())}")
-    print(f"Qrels: {len(qrels_test.items())}")
-    print(f"Corpus: {len(corpus.items())}")
-
-    if shorten:
-        queries_test, corpus = process_data.shorten_and_reduce(queries_test, corpus, 'german')
-        queries_test, corpus = process_data.shorten_and_reduce(queries_test, corpus, 'french')
-        queries_test, corpus = process_data.shorten_and_reduce(queries_test, corpus, 'italian')
-        print(len(queries_test.items()))
-
-    if stopwords_remove:
-        queries_test, corpus = process_data.shorten_and_reduce(queries_test, corpus, "german")
-        queries_test, corpus = process_data.shorten_and_reduce(queries_test, corpus, "italian")
-        queries_test, corpus = process_data.shorten_and_reduce(queries_test, corpus, "french")
-
-    qrels_test_mixed, queries_test_mixed = process_data.create_sll(data['qrel']['mixed'], qrels_test, queries_test, corpus)
-    qrels_test_de, queries_test_de = process_data.create_sll(data['qrel']['de'], qrels_test, queries_test, corpus)
-    qrels_test_fr, queries_test_fr = process_data.create_sll(data['qrel']['fr'], qrels_test, queries_test, corpus)
-    qrels_test_it, queries_test_it = process_data.create_sll(data['qrel']['it'], qrels_test, queries_test, corpus)
-
-    missing_queries = 0
-    for query_id, querie_text in queries_test_mixed.items():
-        if not query_id in qrels_test_mixed:
-            missing_queries = missing_queries+1
-
-    print(f"{missing_queries}query missing in qrel")
-
-    missing_qrels = 0
-    missing_corp = 0
-    for query_key, qrel_value in qrels_test_mixed.items():
-        if not query_key in queries_test_mixed:
-            missing_qrels = missing_qrels+1
-            for corp_id in qrel_value:
-                if not corp_id in corpus:
-                    missing_corp = missing_corp + 1
-
-    print(f"{missing_qrels}query in qrel missing in query")
-    print(f"{missing_corp} corpus missing in qrel")
-
-
-
-    print("After Prozessing Test split:")
-    print(f"Queries: {len(queries_test_mixed.items())}")
-    print(f"Qrels: {len(qrels_test_mixed.items())}")
-    print(f"Corpus: {len(corpus.items())}")
-
+    print("####################################################################################")
+    print('mixed')
+    model_name = 'Stern5497/sBert-swiss-legal-base'
+    print(model_name)
+    print("####################################################################################")
+    print('SBERT')
+    run_evaluate_sbert(corpus_dict, query_mixed, qrels_dict, model_name)
+    print("####################################################################################")
+    print('SSL')
+    run_evaluate_sbert(corpus_dict, query_ssl, qrels_ssl_combined, model_name)
+    print("####################################################################################")
+    print('S')
+    run_evaluate_sbert(corpus_s, query_s, qrels_combined, model_name)
+    print("####################################################################################")
+    
+    model_name = 'distiluse-base-multilingual-cased-v1'  # multilingual model - not trained
+    print(model_name)
+    print("####################################################################################")
+    print('dim reduction')
+    run_evaluate_dim_reduction(corpus_dict, query_mixed, qrels_dict, model_name)
+    print("####################################################################################")
+    print('SBERT')
+    run_evaluate_sbert(corpus_dict, query_mixed, qrels_dict, model_name)
+    print("####################################################################################")
+    print('SSL')
+    run_evaluate_sbert(corpus_dict, query_ssl, qrels_ssl_combined, model_name)
+    print("####################################################################################")
+    print('S')
+    run_evaluate_sbert(corpus_s, query_s, qrels_combined, model_name)
+    print("####################################################################################")
+    
+    print("####################################################################################")
+    model_name = 'Stern5497/sbert-legal-swiss-roberta-base'
+    print(model_name)
+    print("####################################################################################")
+    print('SBERT')
+    run_evaluate_sbert(corpus_dict, query_mixed, qrels_dict, model_name)
+    print("####################################################################################")
+    print('SSL')
+    run_evaluate_sbert(corpus_dict, query_ssl, qrels_ssl_combined, model_name)
+    print("####################################################################################")
+    print('S')
+    run_evaluate_sbert(corpus_s, query_s, qrels_combined, model_name)
+    print("####################################################################################")
+    
+    print("####################################################################################")
+    model_name = 'Stern5497/sBert-legal-xlm-base'
+    print(model_name)
+    print("####################################################################################")
+    print('SBERT')
+    run_evaluate_sbert(corpus_dict, query_mixed, qrels_dict, model_name)
+    print("####################################################################################")
+    print('SSL')
+    run_evaluate_sbert(corpus_dict, query_ssl, qrels_ssl_combined, model_name)
+    print("####################################################################################")
+    print('S')
+    run_evaluate_sbert(corpus_s, query_s, qrels_combined, model_name)
+    print("####################################################################################")
+    
+    print("####################################################################################")
+    model_name = 'Stern5497/sbert-legal-xlm-roberta-base'
+    print(model_name)
+    print("####################################################################################")
+    print('SBERT')
+    run_evaluate_sbert(corpus_dict, query_mixed, qrels_dict, model_name)
+    print("####################################################################################")
+    print('SSL')
+    run_evaluate_sbert(corpus_dict, query_ssl, qrels_ssl_combined, model_name)
+    print("####################################################################################")
+    print('S')
+    run_evaluate_sbert(corpus_s, query_s, qrels_combined, model_name)
+    print("####################################################################################")
+    
+    model_name = 'Stern5497/sbert-distiluse'  # multilingual model - not trained
+    print(model_name)
+    print('SBERT')
+    run_evaluate_sbert(corpus_dict, query_mixed, qrels_dict, model_name)
+    print("####################################################################################")
+    print('SSL')
+    run_evaluate_sbert(corpus_dict, query_ssl, qrels_ssl_combined, model_name)
+    print("####################################################################################")
+    print('S')
+    run_evaluate_sbert(corpus_s, query_s, qrels_combined, model_name)
+    print("####################################################################################")
+    print("####################################################################################")
+    print('dim reduction')
+    run_evaluate_dim_reduction(corpus_dict, query_mixed, qrels_dict, model_name)
+    print("####################################################################################")
+    
+    print("####################################################################################")
+    model_name = 'Stern5497/sbert-distiluse'  # multilingual model - not trained
+    print('dim reduction')
+    run_evaluate_dim_reduction(corpus_short, query_mixed_short, qrel_short, model_name)
+    
+    print("####################################################################################")
+    model_name = 'Stern5497/sbert-distiluse'  # multilingual model - not trained
+    print(model_name)
+    print('SBERT')
+    run_evaluate_sbert(corpus_short, query_mixed_short, qrel_short, model_name)
+    print("####################################################################################")
+    print("####################################################################################")
+    model_name = 'Stern5497/sbert-legal-xlm-roberta-base'
+    print(model_name)
+    print("####################################################################################")
+    print('SBERT')
+    run_evaluate_sbert(corpus_short, query_mixed_short, qrel_short, model_name)
+    print("####################################################################################")
+    print("####################################################################################")
+    model_name = 'Stern5497/sbert-legal-swiss-roberta-base'
+    print(model_name)
+    print("####################################################################################")
+    print('SBERT')
+    run_evaluate_sbert(corpus_short, query_mixed_short, qrel_short, model_name)
+    print("####################################################################################")
     print("####################################################################################")
     model_name = 'distiluse-base-multilingual-cased-v1'  # multilingual model - not trained
     print(model_name)
     print("####################################################################################")
     print('dim reduction')
-    run_evaluate_dim_reduction(corpus, queries_test_mixed, qrels_test_mixed, model_name)
+    run_evaluate_dim_reduction(corpus_short, query_mixed_short, qrel_short, model_name)
+    print("####################################################################################")
     print("####################################################################################")
     print('SBERT')
-    print('mixed')
-    run_evaluate_sbert(corpus, queries_test_mixed, qrels_test_mixed, model_name)
+    run_evaluate_sbert(corpus_short, query_mixed_short, qrel_short, model_name)
     print("####################################################################################")
-    print('de')
-    run_evaluate_sbert(corpus, queries_test_de, qrels_test_de, model_name)
-    print("####################################################################################")
-    print('fr')
-    run_evaluate_sbert(corpus, queries_test_fr, qrels_test_fr, model_name)
-    print("####################################################################################")
-    print('it')
-    run_evaluate_sbert(corpus, queries_test_it, qrels_test_it, model_name)
     """
-    print("####################################################################################")
-    model_name = 'Stern5497/dummy'  # multilingual model - not trained
-    print(model_name)
-    print("####################################################################################")
-    print('dim reduction')
-    run_evaluate_dim_reduction(corpus, queries_test_mixed, queries_test_mixed, model_name)
-    print("####################################################################################")
-    print('SBERT')
-    print('mixed')
-    run_evaluate_sbert(corpus, queries_test_mixed, qrels_test_mixed, model_name)
-    print("####################################################################################")
-    print('de')
-    run_evaluate_sbert(corpus, queries_test_de, qrels_test_de, model_name)
-    print("####################################################################################")
-    print('fr')
-    run_evaluate_sbert(corpus, queries_test_fr, qrels_test_fr, model_name)
-    print("####################################################################################")
-    print('it')
-    run_evaluate_sbert(corpus, queries_test_it, qrels_test_it, model_name)
-
-    print("####################################################################################")
-    model_name = 'Stern5497/sBert-swiss-legal-base'  # multilingual model - trained
-    print(model_name)
-    print("####################################################################################")
-    print('SBERT')
-    print('mixed')
-    run_evaluate_sbert(corpus, queries_test_mixed, qrels_test_mixed, model_name)
-    print("####################################################################################")
-    print('de')
-    run_evaluate_sbert(corpus, queries_test_de, qrels_test_de, model_name)
-    print("####################################################################################")
-    print('fr')
-    run_evaluate_sbert(corpus, queries_test_fr, qrels_test_fr, model_name)
-    print("####################################################################################")
-    print('it')
-    run_evaluate_sbert(corpus, queries_test_it, qrels_test_it, model_name)
-
-    print("####################################################################################")
-    model_name = 'Stern5497/sBert-legal-xlm-base'  # multilingual model - trained
-    print(model_name)
-    print("####################################################################################")
-    print('SBERT')
-    print('mixed')
-    run_evaluate_sbert(corpus, queries_test_mixed, qrels_test_mixed, model_name)
-    print("####################################################################################")
-    print('de')
-    run_evaluate_sbert(corpus, queries_test_de, qrels_test_de, model_name)
-    print("####################################################################################")
-    print('fr')
-    run_evaluate_sbert(corpus, queries_test_fr, qrels_test_fr, model_name)
-    print("####################################################################################")
-    print('it')
-    run_evaluate_sbert(corpus, queries_test_it, qrels_test_it, model_name)
-
-    """
-
-
-
-
-
-if __name__ == '__main__':
-    print("Start")
-    run_project()
-
-
-
-
-

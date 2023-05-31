@@ -45,3 +45,16 @@ def run_evaluate_sbert(corpus, queries, qrels, model_name, from_pretrained=True)
     # mrr = retriever.evaluate_custom(qrels, results, retriever.k_values, metric="mrr")
     recall_cap = retriever.evaluate_custom(qrels, results, retriever.k_values, metric="r_cap")
     hole = retriever.evaluate_custom(qrels, results, retriever.k_values, metric="hole")
+
+    #### Print top-k documents retrieved ####
+    top_k = 10
+
+    query_id, ranking_scores = random.choice(list(results.items()))
+    scores_sorted = sorted(ranking_scores.items(), key=lambda item: item[1], reverse=True)
+    logging.info("Query : %s\n" % queries[query_id])
+
+    for rank in range(top_k):
+        doc_id = scores_sorted[rank][0]
+        # Format: Rank x: ID [Title] Body
+        logging.info(
+            "Rank %d: %s [%s] - %s\n" % (rank + 1, doc_id, corpus[doc_id].get("title"), corpus[doc_id].get("text")))
