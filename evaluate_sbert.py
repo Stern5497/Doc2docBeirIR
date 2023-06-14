@@ -28,7 +28,7 @@ def run_evaluate_sbert(corpus, queries, qrels, model_name, from_pretrained=True)
                 " [SEP] "), batch_size=128))
 
     else:
-        model = DRES(models.SentenceBERT(model_name), batch_size=256, corpus_chunk_size=512*9999)
+        model = DRES(models.SentenceBERT(model_name), batch_size=128, corpus_chunk_size=512*9999)
 
     retriever = EvaluateRetrieval(model, score_function="dot")
 

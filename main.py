@@ -61,29 +61,7 @@ def get_formatted_data(filter_language):
 
     return queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict
 
-if __name__ == '__main__':
-    print("Start")
-    # run_project()
-    """
-    model_name = 'Stern5497/sbert-distiluse'
-    queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data('mixed')
-    run_train_sbert_hardneg(corpus_dict, queries_dict_train, qrels_dict, model_name, from_pretrained=True)
-    """
-
-    """
-    print("####################################################################################")
-    queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data('mixed')
-    train_models(corpus_dict, queries_dict_train, qrels_dict)
-    print("####################################################################################")
-    
-    queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data('mixed')
-    model_name = 'distiluse-base-multilingual-cased-v1'
-    train_loss = 'cosine'  # cosine or dot_product
-    train(corpus_dict, queries_dict_train, qrels_dict, None, None, None, model_name=model_name, train_loss=train_loss,
-          pretrained_model=True)
-    """
-
-
+def run_testing():
     print("####################################################################################")
     print("####################################################################################")
     ssl_queries = []
@@ -138,7 +116,7 @@ if __name__ == '__main__':
         print('SSL')
         run_evaluate_sbert(corpus_dict, query_adapted, qrels_dict_ssl, model_name)
         print("####################################################################################")
-        
+
 
         print("####################################################################################")
         print(language)
@@ -151,7 +129,7 @@ if __name__ == '__main__':
         print('SSL')
         run_evaluate_sbert(corpus_dict, query_adapted, qrels_dict_ssl, model_name)
         print("####################################################################################")
-        """
+
 
         print("####################################################################################")
         print(language)
@@ -164,7 +142,7 @@ if __name__ == '__main__':
         print('SSL')
         run_evaluate_sbert(corpus_dict, query_adapted, qrels_dict_ssl, model_name)
         print("####################################################################################")
-
+        """
 
     queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data('mixed')
 
@@ -175,7 +153,7 @@ if __name__ == '__main__':
     for id in queries_dict_test.keys():
         if id in qrels_dict:
             query_mixed[id] = queries_dict_test[id]
-            if len(query_mixed)<100:
+            if len(query_mixed) < 100:
                 query_mixed_short[id] = queries_dict_test[id]
             if len(query_mixed) > 50000:
                 break
@@ -197,13 +175,14 @@ if __name__ == '__main__':
 
     corpus_short = {}
     qrel_short = {}
-    for id in query_mixed.keys():
+    for id in query_mixed_short.keys():
         qrel_short[id] = qrels_dict[id]
         for id in qrels_dict[id].keys():
             corpus_short[id] = corpus_dict[id]
     print(f"Length of shortened corpus: {len(corpus_short)}")
     print(f"Length of shortened qrel: {len(qrel_short)}")
 
+    """
     # evaluate S-BERT for trained on hardneg: all, SSl, S, 100
     print("####################################################################################")
     print('mixed')
@@ -223,7 +202,6 @@ if __name__ == '__main__':
     run_evaluate_sbert(corpus_short, query_mixed_short, qrel_short, model_name)
     print("####################################################################################")
 
-    """
     print("####################################################################################")
     print('mixed')
     model_name = 'Stern5497/sBert-swiss-legal-base'
@@ -238,7 +216,7 @@ if __name__ == '__main__':
     print('S')
     run_evaluate_sbert(corpus_s, query_s, qrels_combined, model_name)
     print("####################################################################################")
-    
+
     model_name = 'distiluse-base-multilingual-cased-v1'  # multilingual model - not trained
     print(model_name)
     print("####################################################################################")
@@ -254,7 +232,7 @@ if __name__ == '__main__':
     print('S')
     run_evaluate_sbert(corpus_s, query_s, qrels_combined, model_name)
     print("####################################################################################")
-    
+
     print("####################################################################################")
     model_name = 'Stern5497/sbert-legal-swiss-roberta-base'
     print(model_name)
@@ -268,7 +246,7 @@ if __name__ == '__main__':
     print('S')
     run_evaluate_sbert(corpus_s, query_s, qrels_combined, model_name)
     print("####################################################################################")
-    
+
     print("####################################################################################")
     model_name = 'Stern5497/sBert-legal-xlm-base'
     print(model_name)
@@ -282,7 +260,7 @@ if __name__ == '__main__':
     print('S')
     run_evaluate_sbert(corpus_s, query_s, qrels_combined, model_name)
     print("####################################################################################")
-    
+
     print("####################################################################################")
     model_name = 'Stern5497/sbert-legal-xlm-roberta-base'
     print(model_name)
@@ -296,7 +274,7 @@ if __name__ == '__main__':
     print('S')
     run_evaluate_sbert(corpus_s, query_s, qrels_combined, model_name)
     print("####################################################################################")
-    
+
     model_name = 'Stern5497/sbert-distiluse'  # multilingual model - not trained
     print(model_name)
     print('SBERT')
@@ -312,12 +290,13 @@ if __name__ == '__main__':
     print('dim reduction')
     run_evaluate_dim_reduction(corpus_dict, query_mixed, qrels_dict, model_name)
     print("####################################################################################")
-    
+
+
     print("####################################################################################")
     model_name = 'Stern5497/sbert-distiluse'  # multilingual model - not trained
     print('dim reduction')
     run_evaluate_dim_reduction(corpus_short, query_mixed_short, qrel_short, model_name)
-    
+
     print("####################################################################################")
     model_name = 'Stern5497/sbert-distiluse'  # multilingual model - not trained
     print(model_name)
@@ -350,3 +329,61 @@ if __name__ == '__main__':
     run_evaluate_sbert(corpus_short, query_mixed_short, qrel_short, model_name)
     print("####################################################################################")
     """
+
+    print("####################################################################################")
+    print('mixed')
+    model_name = 'Stern5497/sbert-distiluse-hardneg'
+    print(model_name)
+    print('SB 100 only')
+    run_evaluate_sbert(corpus_short, query_mixed_short, qrel_short, model_name)
+    print("####################################################################################")
+    model_name = 'distiluse-base-multilingual-cased-v1'  # multilingual model - not trained
+    print(model_name)
+    print('dim reduction 100')
+    run_evaluate_dim_reduction(corpus_short, query_mixed_short, qrel_short, model_name)
+    print("####################################################################################")
+    print('SB 100 only')
+    run_evaluate_sbert(corpus_short, query_mixed_short, qrel_short, model_name)
+    print("####################################################################################")
+    model_name = 'Stern5497/sbert-distiluse'  # multilingual model - not trained
+    print(model_name)
+    print('SB 100 only')
+    run_evaluate_sbert(corpus_short, query_mixed_short, qrel_short, model_name)
+    print("####################################################################################")
+    model_name = 'Stern5497/sbert-legal-swiss-roberta-base'
+    print(model_name)
+    print('SB 100 only')
+    run_evaluate_sbert(corpus_short, query_mixed_short, qrel_short, model_name)
+    print("####################################################################################")
+    model_name = 'Stern5497/sbert-legal-xlm-roberta-base'
+    print(model_name)
+    print('SBERT')
+    run_evaluate_sbert(corpus_short, query_mixed_short, qrel_short, model_name)
+
+
+if __name__ == '__main__':
+    print("Start")
+    # run_project()
+    """
+    model_name = 'Stern5497/sbert-distiluse'
+    queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data('mixed')
+    run_train_sbert_hardneg(corpus_dict, queries_dict_train, qrels_dict, model_name, from_pretrained=True)
+    """
+    model_name = 'joelito/legal-swiss-roberta-base'
+    queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data('mixed')
+    run_train_sbert_hardneg(corpus_dict, queries_dict_train, qrels_dict, model_name, from_pretrained=True)
+
+    """
+    print("####################################################################################")
+    queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data('mixed')
+    train_models(corpus_dict, queries_dict_train, qrels_dict)
+    print("####################################################################################")
+    
+    queries_dict_train, queries_dict_test, qrels_dict, qrels_dict_ssl, corpus_dict = get_formatted_data('mixed')
+    model_name = 'distiluse-base-multilingual-cased-v1'
+    train_loss = 'cosine'  # cosine or dot_product
+    train(corpus_dict, queries_dict_train, qrels_dict, None, None, None, model_name=model_name, train_loss=train_loss,
+          pretrained_model=True)
+    """
+
+

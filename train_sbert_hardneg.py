@@ -23,6 +23,7 @@ import pathlib, os, tqdm
 import logging
 from beir.retrieval import models
 from beir.retrieval.search.dense import DenseRetrievalExactSearch as DRES
+from sentence_transformers import models as smodels
 
 #### Just some code to print debug information to stdout
 logging.basicConfig(format='%(asctime)s - %(message)s',
@@ -75,15 +76,14 @@ def run_train_sbert_hardneg(corpus, queries, qrels, model_name, from_pretrained=
 
 
     #### Provide any sentence-transformers or HF model
-    #model_name = "Stern5497/sbert-legal-swiss-roberta-base"
-    #word_embedding_model = models.Transformer(model_name, max_seq_length=300)
-    #pooling_model = models.Pooling(word_embedding_model.get_word_embedding_dimension())
-    #model = SentenceTransformer(modules=[word_embedding_model, pooling_model])
+    word_embedding_model = smodels.Transformer(model_name, max_seq_length=512)
+    pooling_model = smodels.Pooling(word_embedding_model.get_word_embedding_dimension())
+    model = SentenceTransformer(modules=[word_embedding_model, pooling_model])
 
-    model = SentenceTransformer(model_name)
+    # model = SentenceTransformer(model_name)
 
     #### Provide a high batch-size to train better with triplets!
-    retriever = TrainRetriever(model=model, batch_size=32)
+    retriever = TrainRetriever(model=model, batch_size=16)
 
     #### Prepare triplets samples
     train_samples = retriever.load_train_triplets(triplets=triplets)
@@ -107,7 +107,7 @@ def run_train_sbert_hardneg(corpus, queries, qrels, model_name, from_pretrained=
 
     #### Configure Train params
     num_epochs = 1
-    evaluation_steps = 10000
+    evaluation_steps = 5000
     warmup_steps = int(len(train_samples) * num_epochs / retriever.batch_size * 0.1)
 
     retriever.fit(train_objectives=[(train_dataloader, train_loss)],
