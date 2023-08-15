@@ -1,9 +1,10 @@
-Models to use:
+This project is part of: 
 
-- bm25: from beir.retrieval.search.lexical import BM25Search as BM25
-
-  - dense: 
-  from beir.retrieval import models 
-  from beir.retrieval.evaluation import EvaluateRetrieval
-  from beir.retrieval.search.dense import DenseRetrievalExactSearch as DRES
-  model = DRES(models.SentenceBERT("msmarco-distilbert-base-v3"), batch_size=16)
+@misc{rasiah2023scale,
+      title={SCALE: Scaling up the Complexity for Advanced Language Model Evaluation}, 
+      author={Vishvaksenan Rasiah and Ronja Stern and Veton Matoshi and Matthias Stürmer and Ilias Chalkidis and Daniel E. Ho and Joel Niklaus},
+      year={2023},
+      eprint={2306.09237},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
+}

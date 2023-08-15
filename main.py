@@ -3,7 +3,6 @@ import json
 import os, pathlib
 import beir
 from beir.datasets.data_loader import GenericDataLoader
-from train_model import train
 from evaluate_dpr import run_evaluate_dpr
 from evaluate_sbert import run_evaluate_sbert
 from evaluate_dim_reduction import run_evaluate_dim_reduction

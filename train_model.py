@@ -1,4 +1,5 @@
 '''
+
 https://github.com/beir-cellar/beir/blob/main/examples/retrieval/training/train_sbert.py
 
 This examples show how to train a basic Bi-Encoder for any BEIR dataset without any mined hard negatives or triplets.
@@ -7,8 +8,6 @@ These embeddings can then be compared using cosine-similarity to find matching p
 For training, we use MultipleNegativesRankingLoss. There, we pass pairs in the format:
 (query, positive_passage). Other positive passages within a single batch becomes negatives given the pos passage.
 We do not mine hard negatives or train triplets in this example.
-Running this script:
-python train_sbert.py
 '''
 import pathlib, os
 import logging
@@ -105,7 +104,5 @@ def train(corpus, queries, qrels, dev_corpus, dev_queries, dev_qrels, model_name
                   warmup_steps=warmup_steps,
                   evaluation_steps=evaluation_steps,
                   use_amp=True)
-
-    print("successfully did it")
 
 
